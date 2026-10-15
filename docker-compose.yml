@@ -1,0 +1,450 @@
+services:
+  # ============================================================================
+  # PORTS 8000-8099: CORE MEMORY & INTERNAL DB SERVICES
+  # ============================================================================
+  # Primary 5-Tier Memory REST API
+  memory-engine:
+    build:
+      context: .
+      target: engine
+    container_name: memory-engine
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - MEMORY_API_KEY=${MEMORY_API_KEY:?set MEMORY_API_KEY in .env}
+      - LITELLM_URL=http://litellm:8400
+      - LITELLM_KEY=${LITELLM_MASTER_KEY:?set LITELLM_MASTER_KEY in .env}
+      - LANCE_DB_PATH=/app/data/lancedb
+      - SESSION_STATE_FILE_PATH=/app/data/session_state.json
+      - ACTIVE_EVAL_MODEL=gemma-4-31b
+      - EMBEDDING_MODEL=nomic-embed
+      - "EMBEDDING_DOC_PREFIX=search_document: "
+      - "EMBEDDING_QUERY_PREFIX=search_query: "
+    volumes:
+      - ./data:/app/data
+      - ./mcp_servers:/app/mcp_servers
+      - ../workspace:/workspace
+    restart: unless-stopped
+    networks:
+      - test-ai
+
+  # Decoupled Short-Term Memory & 32K Context Window Service
+  short-term-memory:
+    build:
+      context: ./short_term_memory
+      dockerfile: Dockerfile
+    container_name: short-term-memory
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8002:8002"
+    volumes:
+      - ./short_term_memory:/app
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://lyra:lyra_db_password@short-term-db:5432/short_term_memory
+      - PORT=8002
+    depends_on:
+      - short-term-db
+    networks:
+      - test-ai
+
+  # Short-Term Memory PostgreSQL Engine (Internal Only, Port 5432)
+  short-term-db:
+    image: postgres:16-alpine
+    container_name: short-term-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: short_term_memory
+      POSTGRES_USER: lyra
+      POSTGRES_PASSWORD: lyra_db_password
+    volumes:
+      - ./data/short_term_postgres:/var/lib/postgresql/data
+    networks:
+      - test-ai
+
+  lyra-studio:
+    build:
+      context: ./lyra-studio
+      dockerfile: Dockerfile
+    container_name: lyra-studio
+    restart: unless-stopped
+    command: npm run dev -- --host 0.0.0.0 --port 8003 --force
+    ports:
+      - "8003:8003"
+    volumes:
+      - ./lyra-studio/src:/app/src
+    networks:
+      - test-ai
+
+  # ============================================================================
+  # PORTS 8100-8199: FRONTENDS & CREATIVE GENERATION
+  # ============================================================================
+  # Lyra Dedicated Frontend (Svelte 5 Runes Sovereign Terminal)
+  lyra-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.svelte
+    container_name: lyra-frontend
+    ports:
+      - "8100:8100"
+    volumes:
+      - ./svelte-terminal/src:/app/src
+      - ./svelte-terminal/data:/app/data
+    environment:
+      - VITE_PORT=8100
+      - DATA_DIR=/app/data
+      - MEMORY_PROXY_URL=http://memory-proxy:8401
+      - LITELLM_URL=http://litellm:8400
+      - STM_SERVICE_URL=http://short-term-memory:8002
+      - MEMORY_ENGINE_URL=http://memory-engine:8000
+      - PROMETHEUS_URL=http://prometheus:8500
+      - MCP_MEMORY_URL=http://mcp-memory:8300
+      - MCP_MONITOR_URL=http://mcp-monitor:8301
+      - MCP_AGENCY_URL=http://mcp-agency:8302
+      - MCP_SURFER_URL=http://mcp-surfer:8303
+    restart: unless-stopped
+    networks:
+      - test-ai
+
+  # SillyTavern Secondary / Roleplay Frontend
+  sillytavern:
+    image: ghcr.io/sillytavern/sillytavern:1.19.0
+    container_name: sillytavern
+    ports:
+      - "8101:8101"
+      - "127.0.0.1:2333:2333"
+    volumes:
+      - ./sillytavern/config:/home/node/app/config
+      - ./sillytavern/data:/home/node/app/data
+    environment:
+      - SILLYTAVERN_LISTEN=true
+      - SILLYTAVERN_PORT=8101
+      - SILLYTAVERN_USERACCOUNTS=true
+      - SILLYTAVERN_WHITELISTMODE=false
+      - SILLYTAVERN_ENABLESERVERPLUGINS=true
+    restart: unless-stopped
+    networks:
+      - test-ai
+
+  # ComfyUI Image Generation
+  comfyui:
+    image: ghcr.io/saviornt/comfyui-nvidia-container:latest
+    container_name: comfyui
+    restart: unless-stopped
+    ports:
+      - "8181:8181"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']
+              capabilities: [gpu]
+    environment:
+      - CM_SECURITY_LEVEL=weak
+    volumes:
+      - ./comfyui/models:/ComfyUI/models
+      - ./comfyui/output:/ComfyUI/output
+    networks:
+      - test-ai
+
+  # ============================================================================
+  # PORTS 8200-8299: LLM & VLM INFERENCE ENGINES
+  # ============================================================================
+  # Ollama VLM (nomic-embed, vision models)
+  ollama:
+    image: ollama/ollama:0.35.1
+    container_name: ollama
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    environment:
+      - OLLAMA_FLASH_ATTENTION=1
+      - OLLAMA_KEEP_ALIVE=5m
+      - OLLAMA_HOST=0.0.0.0:8200
+    volumes:
+      - ./ollama_data:/root/.ollama
+    ports:
+      - "127.0.0.1:8200:8200"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']
+              capabilities: [gpu]
+    restart: unless-stopped
+    networks:
+      - test-ai
+
+  # llama.cpp router (dual 5070 Ti): serves every model in models.ini, one loaded at a time
+  gemma4-31b:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    container_name: gemma4-31b
+    ports:
+      - "127.0.0.1:8201:8201"
+    volumes:
+      - "./llama-server-project/models:/models"
+    environment:
+      - CUDA_VISIBLE_DEVICES=0,1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 2
+              capabilities: [gpu]
+    command:
+      # Router mode: no -m here. Models and their settings live in
+      # ./llama-server-project/models/models.ini
+      - "--models-preset"
+      - "/models/models.ini"
+      # Only one model in VRAM; requesting another unloads the current one first
+      - "--models-max"
+      - "1"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8201"
+    restart: unless-stopped
+    networks:
+      - test-ai
+
+  # ============================================================================
+  # PORTS 8300-8399: MCP TOOL SERVERS (DECOUPLED)
+  # ============================================================================
+  # Long-Term Memory MCP Server
+  mcp-memory:
+    build:
+      context: .
+      target: mcp-memory-target
+    container_name: mcp-memory
+    ports:
+      - "127.0.0.1:8300:8300"
+    volumes:
+      - ./mcp_servers:/app/mcp_servers
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - FASTMCP_HOST=0.0.0.0
+      - FASTMCP_PORT=8300
+      - MCP_TRANSPORT=sse
+      - MAIN_COMPANION_NAME=Lyra
+      - MEMORY_ENGINE_URL=http://memory-engine:8000
+      - MEMORY_API_KEY=${MEMORY_API_KEY:?set MEMORY_API_KEY in .env}
+    restart: unless-stopped
+    networks:
+      - test-ai
+
+  # Hardware Telemetry & Monitoring MCP Server
+  mcp-monitor:
+    build:
+      context: .
+      target: mcp-monitor-target
+    container_name: mcp-monitor
+    ports:
+      - "127.0.0.1:8301:8301"
+    volumes:
+      - ./mcp_servers:/app/mcp_servers
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - FASTMCP_HOST=0.0.0.0
+      - FASTMCP_PORT=8301
+      - MCP_TRANSPORT=sse
+      - PROMETHEUS_URL=http://prometheus:8500
+      - MEMORY_ENGINE_URL=http://memory-engine:8000
+      - MEMORY_API_KEY=${MEMORY_API_KEY:?set MEMORY_API_KEY in .env}
+    restart: unless-stopped
+    networks:
+      - test-ai
+
+  # Agency Tools & Memory Spotlight MCP Server
+  mcp-agency:
+    build:
+      context: .
+      target: mcp-agency-target
+    container_name: mcp-agency
+    ports:
+      - "127.0.0.1:8302:8302"
+    volumes:
+      - ./mcp_servers:/app/mcp_servers
+      - ../ops/requests:/ops/requests
+      - ../ops/status:/ops/status:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - FASTMCP_HOST=0.0.0.0
+      - FASTMCP_PORT=8302
+      - MCP_TRANSPORT=sse
+      - STM_SERVICE_URL=http://short-term-memory:8002
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
+      - NOTIFY_NAME=${NOTIFY_NAME:-Assistant}
+    restart: unless-stopped
+    networks:
+      - test-ai
+
+  # Autonomous Web Surfer MCP Server
+  mcp-surfer:
+    build:
+      context: .
+      target: mcp-surfer-target
+    container_name: mcp-surfer
+    ports:
+      - "127.0.0.1:8303:8303"
+    volumes:
+      - ./mcp_servers:/app/mcp_servers
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - FASTMCP_HOST=0.0.0.0
+      - FASTMCP_PORT=8303
+      - MCP_TRANSPORT=sse
+      - SERPER_API_KEY=${SERPER_API_KEY:-}
+    restart: unless-stopped
+    networks:
+      - test-ai
+
+# File & Image Editing and Creation MCP Server
+  mcp-fileserver:
+    build:
+      context: .
+      target: mcp-fileserver-target
+    container_name: mcp-fileserver
+    ports:
+      - "127.0.0.1:8304:8304"
+    volumes:
+      - ./mcp_servers:/app/mcp_servers
+      - ../workspace:/workspace
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - FASTMCP_HOST=0.0.0.0
+      - FASTMCP_PORT=8304
+      - MCP_TRANSPORT=sse
+      - WORKSPACE_DIR=/workspace
+    restart: unless-stopped
+    networks:
+      - test-ai
+
+
+  # ============================================================================
+  # PORTS 8400-8499: MIDDLEWARE & ROUTING
+  # ============================================================================
+  # LiteLLM Proxy / Router
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: litellm
+    ports:
+      - "127.0.0.1:8400:8400"
+    volumes:
+      - ./litellm/config.yaml:/app/config.yaml
+    environment:
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:?set LITELLM_MASTER_KEY in .env}
+    command: ["--config", "/app/config.yaml", "--port", "8400"]
+    depends_on:
+      - gemma4-31b
+      - ollama
+    restart: unless-stopped
+    networks:
+      - test-ai
+
+  # Memory & Retrieval Proxy for Lyra
+  memory-proxy:
+    build:
+      context: ./proxy
+    container_name: memory-proxy
+    ports:
+      - "127.0.0.1:8401:8401"
+    volumes:
+      - ./proxy:/app
+      - ../workspace:/workspace
+    environment:
+      - UPSTREAM_LLM_URL=http://litellm:8400/v1
+      - UPSTREAM_API_KEY=${LITELLM_MASTER_KEY:?set LITELLM_MASTER_KEY in .env}
+      - MEMORY_ENGINE_URL=http://memory-engine:8000
+      - MEMORY_API_KEY=${MEMORY_API_KEY:?set MEMORY_API_KEY in .env}
+      - MCP_MEMORY_URL=http://mcp-memory:8300/sse
+      - MCP_MONITOR_URL=http://mcp-monitor:8301/sse
+      - MCP_AGENCY_URL=http://mcp-agency:8302/sse
+      - MCP_SURFER_URL=http://mcp-surfer:8303/sse
+      - RUNNING_IN_DOCKER=true
+      - MEMORY_CHARACTERS=${MEMORY_CHARACTERS:-}
+    depends_on:
+      - litellm
+      - memory-engine
+    restart: unless-stopped
+    networks:
+      - test-ai
+
+  # ============================================================================
+  # PORTS 8500-8599: MONITORING & TELEMETRY
+  # ============================================================================
+  # Prometheus Timeseries Server
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: prometheus
+    ports:
+      - "127.0.0.1:8500:8500"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.listen-address=0.0.0.0:8500'
+    restart: unless-stopped
+    networks:
+      - test-ai
+
+  # NVIDIA DCGM Exporter (GPU VRAM, Temp, and Compute Metrics)
+  dcgm-exporter:
+    image: nvcr.io/nvidia/k8s/dcgm-exporter:3.3.5-3.4.0-ubuntu22.04
+    container_name: dcgm-exporter
+    cap_add:
+      - SYS_ADMIN
+    ipc: host
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, utility, compute]
+    command: ["-f", "/etc/dcgm-exporter/default-counters.csv", "-a", "0.0.0.0:8502"]
+    ports:
+      - "127.0.0.1:8502:8502"
+    restart: unless-stopped
+    networks:
+      - test-ai
+
+  # Google cAdvisor (Container Resource Inspector)
+  cadvisor:
+    image: ghcr.io/google/cadvisor:0.54.0
+    container_name: cadvisor
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+      - /etc/machine-id:/etc/machine-id:ro
+    command:
+      - '--port=8503'
+      - '--docker_only=true'
+      - '--housekeeping_interval=10s'
+      - '--disable_metrics=disk,tcp,udp,percpu,sched,process,referenced_memory'
+    ports:
+      - "127.0.0.1:8503:8503"
+    restart: unless-stopped
+    networks:
+      - test-ai
+
+networks:
+  test-ai:
+    name: test-ai

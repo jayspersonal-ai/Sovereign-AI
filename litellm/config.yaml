@@ -1,0 +1,46 @@
+litellm_settings:
+  drop_params: true
+  success_callback: ["prometheus"]
+  failure_callback: ["prometheus"]
+
+model_list:
+  # Gemma 4 31B on the llama.cpp router (dual 5070 Ti tensor-split).
+  # The name after openai/ must match a [section] in models.ini.
+  - model_name: gemma-4-31b
+    litellm_params:
+      model: openai/gemma-4-31b
+      api_base: http://gemma4-31b:8201/v1
+      api_key: "not-needed"
+      supports_function_calling: true
+
+  # Model alias supporting -it suffix
+  - model_name: gemma-4-31b-it
+    litellm_params:
+      model: openai/gemma-4-31b
+      api_base: http://gemma4-31b:8201/v1
+      api_key: "not-needed"
+      supports_function_calling: true
+
+  # GemStrike 31B (Gemma 4 31B creative/roleplay finetune), same llama.cpp router.
+  # Requesting this unloads gemma-4-31b and loads GemStrike (and vice versa).
+  - model_name: gemstrike-31b
+    litellm_params:
+      model: openai/gemstrike-31b
+      api_base: http://gemma4-31b:8201/v1
+      api_key: "not-needed"
+      supports_function_calling: true
+
+  # Embedding Model (Nomic Embed)
+  # manual weekly trigger, fed by gemma-4-31b's tagging output
+  - model_name: nomic-embed
+    litellm_params:
+      model: ollama/nomic-embed-text
+      api_base: http://ollama:8200
+
+general_settings:
+  # Allows Prometheus to scrape /metrics without an API key
+  allow_metrics_unauthenticated: true
+
+router_settings:
+  routing_strategy: simple-shuffle
+  timeout: 300

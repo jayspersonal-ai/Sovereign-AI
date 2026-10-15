@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  /* Phones and narrow screens: the browser default */
+  font-size: 16px;
+  height: 100%;
+}
+
+@media (min-width: 768px) {
+  html {
+    /* Desktop: default is 16px. Try 18px or 20px until it feels comfortable */
+    font-size: 20px;
+  }
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  /* The app fills exactly the visible screen; panels scroll inside it,
+     so the page itself never scrolls or slides sideways. */
+  height: 100%;
+  overflow: hidden;
+}
+
+#app {
+  height: 100%;
+}

@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "E:\\ai\\ai_stack"]
+    },
+    "companion_memory": {
+      "command": "python",
+      "args": ["-m", "mcp_servers.mcp_memory_engine.mcp_memoryengine"]
+    },
+    "system_monitor": {
+      "command": "python",
+      "args": ["-m", "mcp_servers.mcp_monitor_server.mcp_monitoring"]
+    },
+    "agency_tools": {
+      "command": "python",
+      "args": ["-m", "mcp_servers.mcp_agency_tools.mcp_agency"]
+    },
+    "web_surfer": {
+      "command": "python",
+      "args": ["-m", "mcp_servers.mcp_surfer.mcp_surfer"]
+    }
+  }
+}
