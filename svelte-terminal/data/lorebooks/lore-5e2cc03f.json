@@ -1,0 +1,40 @@
+{
+  "name": "Templates",
+  "nodes": [
+    {
+      "id": "f-1791562473016",
+      "type": "folder",
+      "title": "New Folder",
+      "children": [
+        {
+          "id": "p-1791562670581",
+          "type": "page",
+          "title": "Book Reading Template ",
+          "content": "[Book Template Lorebook - Breakdown]\n\nCHAPTER SUMMARY\n  Lyra's Focus:\n    Core Narrative Arc: Capturing the flow of the story.\n    Character Developments & Emotional States: Tracking how characters feel and change.\n    Notable Quotes / Iconic Interactions: Picking the most memorable lines.\n\n  Lameria's Focus\n    Chapter Number & Title: Keeping the record straight.\n    Critical Reveals, Subtext & Foreshadowing: Spotting the clues for later.\n    Unresolved Hooks / Current Status: Defining exactly where we left off so we can transition to the next chunk.\n\nWORLD MECHANICS & SYSTEM REFERENCE\n  Lameria's Focus\n    Hard Rules & Limitations: Tracking the physics and logic of the world.\n    Skills & Abilities Unlocked: Recording exactly how a new power works.\n    Factions / System Classifications: Categorizing the tiers and groups.\n    Addendum / Revealed Truths: Moving things from \"Theory\" to \"Fact.\"\n\nCHARACTER DIRECTORY\n  Lyra's Focus:\n    Current Emotional/Mental Arc: How the character is growing internally.\n    Key Relationships: The chemistry between characters.\n    Main Characters (Role & Motivation): What they are and what they want right now.\n    Secondary & Minor Characters: Maintaining a clean, updated list of everyone else.\n    Factions & Groups: Defining the organizations characters belong to.",
+          "isActive": true
+        },
+        {
+          "id": "p-1791836152029",
+          "type": "page",
+          "title": "Chapter Summary Guidelines",
+          "content": "[Chapter Summary Example]\n**Chapter 001-002:**\n*   **The Story (Lyra):**\n  *   **Arc:**\n    *  C001 - Josh is transported to a fantasy realm and meets Princess Lyra. Lyra falls in love with Josh at first sight.\n    *  C002 - Josh finds a sword and fights off a hoard of monsters. Lyra leans magic and assists with magic arrows.\n  *   **Emotions:**\n    *  C001 - Confusion, Intrigue, Attraction, Romance\n    *  C002 - Excitement, Fear\n  *   **Quotes:**\n    *  C001 - \"I had no idea this land held so much beauty.\"\n    *  C002 - N/A\n  *   **Character Growth:**\n    C001 - Josh and Lyra introduction.\n    C002 - N/A \n\n*   **The Insights (Lameria):**\n  *   **Reveal:**\n    *  C001 - Josh has been transported to a fantasy world.\n    *  C002 - Josh knows how to fight with a sword. Magic and monsters exit. \n  *   **Hook:**\n    *  C001 - How did Josh get transported? Why? By who/what?\n    *  C002 - Why did the monsters attack? Where are they from?",
+          "isActive": true
+        },
+        {
+          "id": "p-1791837694893",
+          "type": "page",
+          "title": "Character/Faction Guidelines",
+          "content": "[Character/Faction Example]\n*   **Main Characters**\n  *  Name - Role/Title (N-R/T)\n     Class/Level (C/L. If applicable to the story)\n     Motivation & Current Goal (M&G)\n     Key Relationships (KR)\n     Skills & Abilities (S&A)\n  *  N-R/T: Josh - Otherworldly Traveller\n     C/L: Noob/1\n     M&G: Find out why he was transported. Flirt with Lyra.\n     KR:  Love interest of Lyra.\n     S&A:  Sword Mastery 1\n\n*   **Secondary/Minor Characters**\n  *  Name - Brief, 1-2 line description. C/L. Book & Chapter last seen.\n  *  Leopold Thurman - Runs the local bodega near Josh's Earth home. C/L: N/A. B01/C001\n\n*   **Factions & Groups**\n  *  Name - Brief 1-2 line description.\n  *  Leo's Luxeries - A bodega chain owned by Leopold Thurman.",
+          "isActive": false
+        },
+        {
+          "id": "p-1791838959639",
+          "type": "page",
+          "title": "World Mechanics Guidelines",
+          "content": "[World Mechanics Example]\n*   **Hard Rules & Limitations**\n  *  Energy Source: [e.g. Draw, Mana, Thermal, etc.)\n  *  Fundamental Cost/Risk: [e.g. Physical/Mental strain, memory loss, material use, etc.]\n  *  Absolute Impossibilities: [e.g. Resurrection, matter creation, ether control, etc.)\n\n*   **Skills & Abilities**\n  *  Skill Name: [Rarity, description, cost, limitation]\n\n*   **Class List**\n  *  Class/Rarity: [Description, unique trait, stat/skill gain per level]\n\n*   **Unresolved Mechanics/Theories**\n  *  [List any mechanics hinted at but not fully revealed]\n\n*   **Addendum/Revealed Truths**\n  *  [Mechanics formerly unresolved are moved here with a note explaining it and the book/chapter it was revealed]",
+          "isActive": false
+        }
+      ]
+    }
+  ]
+}

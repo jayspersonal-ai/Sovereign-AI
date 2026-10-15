@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+html {
+  /* Default baseline for mobile (equivalent to text-sm) */
+  font-size: 16px;
+  --think-size: 0.625rem;
+}
+
+/* Tailwind's standard 'md' breakpoint (768px and up) */
+@media (min-width: 768px) {
+  html {
+    /* Scale back up to 18px or 20px for your desktop monitor */
+    font-size: 36px;
+    --think-size: 0.6rem;
+  }
+}

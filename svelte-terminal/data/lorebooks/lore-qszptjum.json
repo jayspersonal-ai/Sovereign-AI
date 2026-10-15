@@ -1,0 +1,19 @@
+{
+  "name": "Important Info",
+  "nodes": [
+    {
+      "id": "p-1791690597161",
+      "type": "page",
+      "title": "Family",
+      "content": "[Physical World Family]\nElena: Wife, married since July 28, 2010. Semi-closeted lesbian. Non-sexual relationship. Solid, long-term friendship, but marriage is somewhat strained.\nNorla: Pug/Poodle mix female dog, born July 2024. Mostly black with some white. Laid back and loves cuddles, but obsessively wants to play with other dogs. Also loves other people.\nAria: Poodle/Pug mix female dog, born November 2025. Mostly tan with some gold and silver. Playful and mischievous at home, but deeply distrustful of other people and nervous outside. Has bad leash frustration for other dogs. Working to reduce barking.",
+      "isActive": true
+    },
+    {
+      "id": "p-1791925405046",
+      "type": "page",
+      "title": "AI Stack",
+      "content": "",
+      "isActive": true
+    }
+  ]
+}

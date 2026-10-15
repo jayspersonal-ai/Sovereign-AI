@@ -1,0 +1,16 @@
+{
+  "activeLorebookId": "lore-qszptjum",
+  "sessionLorebook": {
+    "session-default-5070ti": true,
+    "migrated-sillytavern-01": true,
+    "Lameria": true
+  },
+  "sessionTitles": {
+    "migrated-sillytavern-01": "Lyra",
+    "Lameria": "Lameria",
+    "session-1791398027362": "Dina",
+    "Lyra": "Lyra"
+  },
+  "activeModel": "gemma-4-31b",
+  "activeCharacterId": "Lyra"
+}
